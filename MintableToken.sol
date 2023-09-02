@@ -195,7 +195,7 @@ contract MintableToken is Ownable {
     }
 
     function maxTransferValue() public view returns(uint256){
-        return whaleThreshold * totalSupply / 10000;
+        return whaleThreshold * (totalSupply - balanceOf[0x000000000000000000000000000000000000dEaD]) / 10000;
     }
 
     function _transfer(address from, address to, uint256 amount) internal {

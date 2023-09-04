@@ -8,22 +8,28 @@ contract DaoToken {
     uint256 immutable public totalSupply;
     mapping(address => uint256) public balanceOf;
     mapping(address => mapping(address => uint256)) public allowance;
-    address immutable public feeTo;
+    address constant public blackHole = 0x000000000000000000000000000000000000dEaD;
     uint256 immutable public feeRate;
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(address indexed owner, address indexed spender, uint256 value);
 
-    constructor(string memory name_, string memory symbol_, uint256 totalSupply_, uint256 feeRate_, address feeTo_) {
-        require(feeTo_ != address(0), "zero feeTo");
+    constructor(string memory name_, string memory symbol_, uint256 totalSupply_, address[] memory initAddrs, uint256[] memory initBalances, uint256 feeRate_) {
+        require(initAddrs.length == initBalances.length, "length not match");
         require(feeRate_ <= 10000, "feeRate > 10000");
         name = name_;
         symbol = symbol_;
-        totalSupply_ *= 1e18;
-        totalSupply = totalSupply_;
-        balanceOf[feeTo_] = totalSupply_;
+        uint256 sum = 0;
+        for(uint256 i = 0; i < initAddrs.length; i++){
+            uint256 balance = initBalances[i] * 1e18;
+            address initAddr = initAddrs[i];
+            require(initAddr != address(0), "zero addr");
+            balanceOf[initAddr] = balance;
+            emit Transfer(address(0), initAddr, balance);
+            sum += balance;
+        }
+        require(sum == totalSupply_ * 1e18, "totalSupply not match");
+        totalSupply = sum;
         feeRate = feeRate_;
-        feeTo = feeTo_;
-        emit Transfer(address(0), feeTo_, totalSupply_);
     }
 
     function transfer(address to, uint256 amount) external returns (bool) {
@@ -50,11 +56,13 @@ contract DaoToken {
         unchecked {
             balanceOf[from] = fromBalance - amount;
         }
+        if(to != blackHole){
         uint256 fee = feeRate * amount / 10000;
-        if(fee > 0){
-            balanceOf[feeTo] += fee;
-            emit Transfer(from, feeTo, fee);
-            amount -= fee;
+            if(fee > 0){
+                balanceOf[blackHole] += fee;
+                emit Transfer(from, blackHole, fee);
+                amount -= fee;
+            }
         }
         unchecked {
             balanceOf[to] += amount;

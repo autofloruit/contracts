@@ -8,24 +8,22 @@ contract DaoToken {
     uint256 immutable public totalSupply;
     mapping(address => uint256) public balanceOf;
     mapping(address => mapping(address => uint256)) public allowance;
-    address immutable public feeTo;
-    uint256 immutable public feeRate;
+    uint256 immutable public burnRate;
     address immutable public fund;
     address constant public blackHole = 0x000000000000000000000000000000000000dEaD;
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(address indexed owner, address indexed spender, uint256 value);
 
-    constructor(string memory name_, string memory symbol_, uint256 totalSupply_, address initAddr, address feeTo_, uint256 feeRate_, address fund_) {
-        require(initAddr != address(0) && feeTo_ != address(0) && fund_ != address(0), "zero address");
-        require(feeRate_ <= 10000, "fee rate > 10000");
+    constructor(string memory name_, string memory symbol_, uint256 totalSupply_, address initAddr, uint256 burnRate_, address fund_) {
+        require(initAddr != address(0) && fund_ != address(0), "zero address");
+        require(burnRate_ <= 10000, "fee rate > 10000");
         name = name_;
         symbol = symbol_;
         totalSupply_ *= 1e18;
         totalSupply = totalSupply_;
         balanceOf[initAddr] = totalSupply_;
         emit Transfer(address(0), initAddr, totalSupply_);
-        feeTo = feeTo_;
-        feeRate = feeRate_;
+        burnRate = burnRate_;
         fund = fund_;
     }
 
@@ -53,12 +51,12 @@ contract DaoToken {
         unchecked {
             balanceOf[from] = fromBalance - amount;
         }
-        if(to != blackHole && to != fund && from != fund && from != blackHole){
-            uint256 fee = feeRate * amount / 10000;
-            if(fee > 0){
-                balanceOf[feeTo] += fee;
-                emit Transfer(from, feeTo, fee);
-                amount -= fee;
+        if(to != blackHole && to != fund && from != fund){
+            uint256 burnAmount = burnRate * amount / 10000;
+            if(burnAmount > 0){
+                balanceOf[blackHole] += burnAmount;
+                emit Transfer(from, blackHole, burnAmount);
+                amount -= burnAmount;
             }
         }
         unchecked {

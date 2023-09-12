@@ -57,7 +57,7 @@ contract DaoToken {
             balanceOf[from] = fromBalance - amount;
         }
         if(to != blackHole){
-        uint256 fee = feeRate * amount / 10000;
+            uint256 fee = feeRate * amount / 10000;
             if(fee > 0){
                 balanceOf[blackHole] += fee;
                 emit Transfer(from, blackHole, fee);
